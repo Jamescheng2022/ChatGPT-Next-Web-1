@@ -95,7 +95,7 @@ const cn = {
   },
   Store: {
     DefaultTopic: "新的聊天",
-    BotHello: "有什么可以帮你的吗",
+    BotHello: "致力于人工智能在工程行业领域的应用，点击左下方第二个图标联系我。微信：gdmf2021",
     Error: "出错了，稍后重试吧",
     Prompt: {
       History: (content: string) =>
