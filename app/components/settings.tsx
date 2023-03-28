@@ -155,7 +155,7 @@ export function Settings(props: { closeSettings: () => void }) {
             {checkingUpdate ? (
               <div />
             ) : hasNewVersion ? (
-              <Link href={UPDATE_URL} target="_blank" className="link">
+              <Link href="https://github.com/Jamescheng2022/ChatGPT-Next-Web-1" target="_blank" className="link">
                 {Locale.Settings.Update.GoToUpdate}
               </Link>
             ) : (
