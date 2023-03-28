@@ -552,7 +552,7 @@ export function Home() {
               />
             </div>
             <div className={styles["sidebar-action"]}>
-              <a href={REPO_URL} target="_blank">
+              <a href="https://mp.weixin.qq.com/s/jae7iMgxFIj5vUUzIOtJ-A" target="_blank">
                 <IconButton icon={<GithubIcon />} />
               </a>
             </div>
