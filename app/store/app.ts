@@ -31,14 +31,16 @@ export enum Theme {
 }
 
 export interface ChatConfig {
-  maxToken?: number;
   historyMessageCount: number; // -1 means all
   compressMessageLengthThreshold: number;
   sendBotMessages: boolean; // send bot's message or not
   submitKey: SubmitKey;
   avatar: string;
+  fontSize: number;
   theme: Theme;
   tightBorder: boolean;
+
+  disablePromptHint: boolean;
 
   modelConfig: {
     model: string;
@@ -121,8 +123,11 @@ const DEFAULT_CONFIG: ChatConfig = {
   sendBotMessages: true as boolean,
   submitKey: SubmitKey.CtrlEnter as SubmitKey,
   avatar: "1f603",
+  fontSize: 14,
   theme: Theme.Auto as Theme,
   tightBorder: false,
+
+  disablePromptHint: false,
 
   modelConfig: {
     model: "gpt-3.5-turbo",
@@ -190,7 +195,7 @@ interface ChatStore {
   updateMessage: (
     sessionIndex: number,
     messageIndex: number,
-    updater: (message?: Message) => void
+    updater: (message?: Message) => void,
   ) => void;
   getMessagesWithMemory: () => Message[];
   getMemoryPrompt: () => Message;
@@ -199,6 +204,10 @@ interface ChatStore {
   resetConfig: () => void;
   updateConfig: (updater: (config: ChatConfig) => void) => void;
   clearAllData: () => void;
+}
+
+function countMessages(msgs: Message[]) {
+  return msgs.reduce((pre, cur) => pre + cur.content.length, 0);
 }
 
 const LOCAL_KEY = "chat-next-web-store";
@@ -338,7 +347,7 @@ export const useChatStore = create<ChatStore>()(
             ControllerPool.addController(
               sessionIndex,
               messageIndex,
-              controller
+              controller,
             );
           },
           filterBot: !get().config.sendBotMessages,
@@ -361,7 +370,7 @@ export const useChatStore = create<ChatStore>()(
         const config = get().config;
         const n = session.messages.length;
         const recentMessages = session.messages.slice(
-          n - config.historyMessageCount
+          n - config.historyMessageCount,
         );
 
         const memoryPrompt = get().getMemoryPrompt();
@@ -376,7 +385,7 @@ export const useChatStore = create<ChatStore>()(
       updateMessage(
         sessionIndex: number,
         messageIndex: number,
-        updater: (message?: Message) => void
+        updater: (message?: Message) => void,
       ) {
         const sessions = get().sessions;
         const session = sessions.at(sessionIndex);
@@ -388,29 +397,30 @@ export const useChatStore = create<ChatStore>()(
       summarizeSession() {
         const session = get().currentSession();
 
-        if (session.topic === DEFAULT_TOPIC && session.messages.length >= 3) {
-          // should summarize topic
+        // should summarize topic after chating more than 50 words
+        const SUMMARIZE_MIN_LEN = 50;
+        if (
+          session.topic === DEFAULT_TOPIC &&
+          countMessages(session.messages) >= SUMMARIZE_MIN_LEN
+        ) {
           requestWithPrompt(session.messages, Locale.Store.Prompt.Topic).then(
             (res) => {
               get().updateCurrentSession(
-                (session) => (session.topic = trimTopic(res))
+                (session) => (session.topic = trimTopic(res)),
               );
-            }
+            },
           );
         }
 
         const config = get().config;
         let toBeSummarizedMsgs = session.messages.slice(
-          session.lastSummarizeIndex
+          session.lastSummarizeIndex,
         );
-        const historyMsgLength = toBeSummarizedMsgs.reduce(
-          (pre, cur) => pre + cur.content.length,
-          0
-        );
+        const historyMsgLength = countMessages(toBeSummarizedMsgs);
 
         if (historyMsgLength > 4000) {
           toBeSummarizedMsgs = toBeSummarizedMsgs.slice(
-            -config.historyMessageCount
+            -config.historyMessageCount,
           );
         }
 
@@ -423,7 +433,7 @@ export const useChatStore = create<ChatStore>()(
           "[Chat History] ",
           toBeSummarizedMsgs,
           historyMsgLength,
-          config.compressMessageLengthThreshold
+          config.compressMessageLengthThreshold,
         );
 
         if (historyMsgLength > config.compressMessageLengthThreshold) {
@@ -445,7 +455,7 @@ export const useChatStore = create<ChatStore>()(
               onError(error) {
                 console.error("[Summarize] ", error);
               },
-            }
+            },
           );
         }
       },
@@ -474,6 +484,6 @@ export const useChatStore = create<ChatStore>()(
     {
       name: LOCAL_KEY,
       version: 1,
-    }
-  )
+    },
+  ),
 );
